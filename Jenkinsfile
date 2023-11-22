@@ -83,4 +83,24 @@ pylint --exit-zero --report=y --output-format=json:pylint-report.json,colorized 
   environment {
     registry = 'vpanton/flask-app'
   }
+}stage('Publish') {
+      steps {
+        script {
+          docker.withRegistry('','dockerhub_id'){
+            docker.image("${registry}:latest").push('latest')
+            docker.image("${registry}:${env.BUILD_ID}").push('${env.BUILD_ID}')
+          }
+        }
+
+      }
+    }
+  stage('Deploy') {
+  steps{
+    sh "docker stop flask-app || true; docker rm flask-app || true; docker run -d --name flask-app -p 9000:9000 ${registry}:${env.BUILD_ID}"
+  }
+}
+stage('Validation') {
+  steps{
+    sh 'sleep 5; curl -i http://localhost:9000/test_string'
+  }
 }
